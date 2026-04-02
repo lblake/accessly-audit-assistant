@@ -9,7 +9,38 @@ import Footer from "@/components/Footer";
 
 type AppState = "input" | "modal" | "loading" | "results";
 
-const API_BASE_URL = ""; // Replace with your Render URL once deployed
+const API_BASE_URL = "";
+
+const MOCK_RESULT = {
+  scanId: "mock-123",
+  riskScore: 8,
+  pageScanned: "gymshark.com/collections/all",
+  executiveSummary: "This store has several critical accessibility issues that create significant legal exposure under the EAA and Equality Act 2010. Multiple issues prevent disabled customers from completing purchases.",
+  topIssues: [
+    {
+      title: "Images missing alternative text",
+      description: "47 product images have no descriptive text, making them completely invisible to screen reader users and visually impaired customers.",
+      severity: "Critical" as const,
+      legalRisk: "Potential EAA exposure · Equality Act 2010 risk",
+      howToFix: "Add an alt attribute to every img tag describing what the image shows.",
+    },
+    {
+      title: "Form fields have no labels",
+      description: "Email signup and checkout forms use placeholder text instead of proper labels, which disappear when a user starts typing.",
+      severity: "Critical" as const,
+      legalRisk: "WCAG 2.1 AA failure · High conversion impact",
+      howToFix: "Replace placeholder-only inputs with visible label elements linked via for and id attributes.",
+    },
+    {
+      title: "Insufficient colour contrast on buttons",
+      description: "Primary CTA buttons fail the 4.5:1 contrast ratio required by WCAG 2.1 AA.",
+      severity: "Major" as const,
+      legalRisk: "EAA compliance gap · Affects conversion rate",
+      howToFix: "Darken the button text or adjust the background colour until contrast ratio reaches 4.5:1.",
+    },
+  ],
+  pdfUrl: "#",
+};
 
 interface ScanResult {
   scanId: string;
@@ -25,6 +56,13 @@ interface ScanResult {
   pdfUrl: string;
   pageScanned: string;
 }
+
+const DEV_STATES = [
+  { key: "input", label: "Hero" },
+  { key: "modal", label: "Modal" },
+  { key: "loading", label: "Loading" },
+  { key: "results", label: "Results" },
+] as const;
 
 const Index = () => {
   const [state, setState] = useState<AppState>("input");
@@ -86,11 +124,38 @@ const Index = () => {
     setApiError(null);
   }, []);
 
+  const handleDevState = (key: string) => {
+    if (key === "results") {
+      setScanResult(MOCK_RESULT);
+    }
+    setState(key as AppState);
+  };
+
+  const displayResult = scanResult || MOCK_RESULT;
+
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Dev preview bar */}
+      <div className="fixed top-0 inset-x-0 z-[100] flex items-center gap-2 bg-[hsl(0,0%,8%)] border-b border-border/40 px-3 py-1.5">
+        <span className="text-[11px] font-medium text-muted-foreground tracking-wide uppercase mr-1">Dev</span>
+        {DEV_STATES.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => handleDevState(key)}
+            className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
+              state === key
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <Navbar />
 
-      <main className="flex-1">
+      <main className="flex-1 pt-7">
         {state === "input" && (
           <HeroSection onSubmit={handleUrlSubmit} apiError={apiError} apiBaseUrl={API_BASE_URL} />
         )}
@@ -104,14 +169,14 @@ const Index = () => {
 
         {state === "loading" && <LoadingState />}
 
-        {state === "results" && scanResult && (
+        {state === "results" && displayResult && (
           <>
             <ResultsPanel
-              riskScore={scanResult.riskScore}
-              totalIssues={scanResult.topIssues.length}
-              categories={new Set(scanResult.topIssues.map((i) => i.severity)).size}
-              topIssues={scanResult.topIssues}
-              scanId={scanResult.scanId}
+              riskScore={displayResult.riskScore}
+              totalIssues={displayResult.topIssues.length}
+              categories={new Set(displayResult.topIssues.map((i) => i.severity)).size}
+              topIssues={displayResult.topIssues}
+              scanId={displayResult.scanId}
               apiBaseUrl={API_BASE_URL}
               onScanAnother={handleReset}
             />

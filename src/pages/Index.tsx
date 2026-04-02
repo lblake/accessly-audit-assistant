@@ -6,10 +6,8 @@ import LoadingState from "@/components/LoadingState";
 import ResultsPanel from "@/components/ResultsPanel";
 import CTABanner from "@/components/CTABanner";
 import Footer from "@/components/Footer";
-import RateLimitedState from "@/components/RateLimitedState";
-import ErrorState from "@/components/ErrorState";
 
-type AppState = "input" | "modal" | "loading" | "results" | "rate-limited" | "error-blocked" | "error-generic";
+type AppState = "input" | "modal" | "loading" | "results";
 
 const API_BASE_URL = ""; // Replace with your Render URL once deployed
 
@@ -33,16 +31,19 @@ const Index = () => {
   const [url, setUrl] = useState("");
   const [specificUrl, setSpecificUrl] = useState<string | undefined>();
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const handleUrlSubmit = useCallback((submittedUrl: string, specific?: string) => {
     setUrl(submittedUrl);
     setSpecificUrl(specific);
+    setApiError(null);
     setState("modal");
   }, []);
 
   const handleLeadSubmit = useCallback(
     async (firstName: string, email: string, _subscribe: boolean) => {
       setState("loading");
+      setApiError(null);
 
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 45000);
@@ -59,15 +60,9 @@ const Index = () => {
 
         if (!response.ok) {
           const data = await response.json().catch(() => ({}));
-          if (data?.code === "RATE_LIMITED") {
-            setState("rate-limited");
-            return;
-          }
-          if (data?.code === "BLOCKED") {
-            setState("error-blocked");
-            return;
-          }
-          setState("error-generic");
+          const code = data?.code || "GENERIC";
+          setApiError(code);
+          setState("input");
           return;
         }
 
@@ -76,11 +71,8 @@ const Index = () => {
         setState("results");
       } catch (err: any) {
         clearTimeout(timeout);
-        if (err?.name === "AbortError") {
-          setState("error-generic");
-        } else {
-          setState("error-generic");
-        }
+        setApiError("GENERIC");
+        setState("input");
       }
     },
     [url, specificUrl]
@@ -91,6 +83,7 @@ const Index = () => {
     setUrl("");
     setSpecificUrl(undefined);
     setScanResult(null);
+    setApiError(null);
   }, []);
 
   return (
@@ -98,11 +91,13 @@ const Index = () => {
       <Navbar />
 
       <main className="flex-1">
-        {state === "input" && <HeroSection onSubmit={handleUrlSubmit} />}
+        {state === "input" && (
+          <HeroSection onSubmit={handleUrlSubmit} apiError={apiError} apiBaseUrl={API_BASE_URL} />
+        )}
 
         {state === "modal" && (
           <>
-            <HeroSection onSubmit={handleUrlSubmit} />
+            <HeroSection onSubmit={handleUrlSubmit} apiError={apiError} apiBaseUrl={API_BASE_URL} />
             <LeadCaptureModal onSubmit={handleLeadSubmit} />
           </>
         )}
@@ -123,10 +118,6 @@ const Index = () => {
             <CTABanner />
           </>
         )}
-
-        {state === "rate-limited" && <RateLimitedState apiBaseUrl={API_BASE_URL} />}
-        {state === "error-blocked" && <ErrorState type="blocked" onRetry={handleReset} />}
-        {state === "error-generic" && <ErrorState type="generic" onRetry={handleReset} />}
       </main>
 
       <Footer />

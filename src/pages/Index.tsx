@@ -57,12 +57,6 @@ interface ScanResult {
   pageScanned: string;
 }
 
-const DEV_STATES = [
-  { key: "input", label: "Hero" },
-  { key: "modal", label: "Modal" },
-  { key: "loading", label: "Loading" },
-  { key: "results", label: "Results" },
-] as const;
 
 const Index = () => {
   const [state, setState] = useState<AppState>("input");
@@ -124,38 +118,13 @@ const Index = () => {
     setApiError(null);
   }, []);
 
-  const handleDevState = (key: string) => {
-    if (key === "results") {
-      setScanResult(MOCK_RESULT);
-    }
-    setState(key as AppState);
-  };
-
   const displayResult = scanResult || MOCK_RESULT;
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Dev preview bar */}
-      <div className="fixed top-0 inset-x-0 z-[100] flex items-center gap-2 bg-[hsl(0,0%,8%)] border-b border-border/40 px-3 py-1.5">
-        <span className="text-[11px] font-medium text-muted-foreground tracking-wide uppercase mr-1">Dev</span>
-        {DEV_STATES.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => handleDevState(key)}
-            className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
-              state === key
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
       <Navbar />
 
-      <main className="flex-1 pt-7">
+      <main className="flex-1">
         {state === "input" && (
           <HeroSection onSubmit={handleUrlSubmit} apiError={apiError} apiBaseUrl={API_BASE_URL} />
         )}

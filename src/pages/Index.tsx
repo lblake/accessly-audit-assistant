@@ -124,7 +124,7 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      <main className="flex-1 pt-7">
+      <main className="flex-1">
         {state === "input" && (
           <HeroSection onSubmit={handleUrlSubmit} apiError={apiError} apiBaseUrl={API_BASE_URL} />
         )}

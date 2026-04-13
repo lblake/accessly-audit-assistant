@@ -7,7 +7,7 @@ const Navbar = () => (
         Accessly<span className="text-primary">.</span>
       </div>
       <Button variant="outline-accent" size="sm" asChild>
-        <a href="https://merchantautomations.ai" target="_blank" rel="noopener noreferrer">
+        <a href="https://link.accesslyscan.ai/widget/booking/ilnrdPtvRfUBZ4gd4ltA" target="_blank" rel="noopener noreferrer">
           Book an Audit
         </a>
       </Button>

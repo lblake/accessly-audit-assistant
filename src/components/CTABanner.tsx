@@ -8,7 +8,7 @@ const CTABanner = () => (
         Automated scanners catch around 30% of accessibility issues. Our manual audit finds the rest — we tell your devs exactly what to fix first, in an order that protects you legally and ships faster, plus a report that proves you meet WCAG standards. Starting from £1,500.
       </p>
       <Button variant="cta" size="lg" className="mt-4" asChild>
-        <a href="https://merchantautomations.ai" target="_blank" rel="noopener noreferrer">
+        <a href="https://link.accesslyscan.ai/widget/booking/ilnrdPtvRfUBZ4gd4ltA" target="_blank" rel="noopener noreferrer">
           Book a Free Audit Review Call
         </a>
       </Button>

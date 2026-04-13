@@ -9,8 +9,10 @@ import Footer from "@/components/Footer";
 
 type AppState = "input" | "modal" | "loading" | "results";
 
-const API_BASE_URL = "";
+// ── Backend URL ───────────────────────────────────────────────────────────────
+const API_BASE_URL = "https://accesslyscan-backend.onrender.com";
 
+// ── Fallback shown in results UI during development / if scan result is null ──
 const MOCK_RESULT = {
   scanId: "mock-123",
   riskScore: 8,
@@ -39,6 +41,7 @@ const MOCK_RESULT = {
       howToFix: "Darken the button text or adjust the background colour until contrast ratio reaches 4.5:1.",
     },
   ],
+  fullIssueList: [],
   pdfUrl: "#",
 };
 
@@ -52,11 +55,16 @@ interface ScanResult {
     legalRisk: string;
     howToFix: string;
   }>;
+  // Full list returned by the API — used for accurate issue counts
+  fullIssueList: Array<{
+    title: string;
+    severity: "Critical" | "Major" | "Minor";
+    count: number;
+  }>;
   executiveSummary: string;
   pdfUrl: string;
   pageScanned: string;
 }
-
 
 const Index = () => {
   const [state, setState] = useState<AppState>("input");
@@ -78,13 +86,18 @@ const Index = () => {
       setApiError(null);
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 45000);
+      const timeout = setTimeout(() => controller.abort(), 90000); // 90s — WAVE + Claude can take ~60s
 
       try {
         const response = await fetch(`${API_BASE_URL}/api/audit`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url, specificUrl, email, firstName }),
+          body: JSON.stringify({
+            // If a specific page URL was provided use that, otherwise use the store URL
+            url: specificUrl || url,
+            email,
+            firstName,
+          }),
           signal: controller.signal,
         });
 
@@ -98,12 +111,16 @@ const Index = () => {
           return;
         }
 
-        const data = await response.json();
+        const data: ScanResult = await response.json();
         setScanResult(data);
         setState("results");
       } catch (err: any) {
         clearTimeout(timeout);
-        setApiError("GENERIC");
+        if (err?.name === "AbortError") {
+          setApiError("WAVE_TIMEOUT");
+        } else {
+          setApiError("GENERIC");
+        }
         setState("input");
       }
     },
@@ -119,6 +136,14 @@ const Index = () => {
   }, []);
 
   const displayResult = scanResult || MOCK_RESULT;
+
+  // Total issues from the full list; fall back to topIssues length if not available
+  const totalIssues = displayResult.fullIssueList?.length || displayResult.topIssues.length;
+  // Count unique severity levels across all issues as a proxy for categories
+  const categories = new Set(
+    (displayResult.fullIssueList?.length ? displayResult.fullIssueList : displayResult.topIssues)
+      .map((i) => i.severity)
+  ).size;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -142,8 +167,8 @@ const Index = () => {
           <>
             <ResultsPanel
               riskScore={displayResult.riskScore}
-              totalIssues={displayResult.topIssues.length}
-              categories={new Set(displayResult.topIssues.map((i) => i.severity)).size}
+              totalIssues={totalIssues}
+              categories={categories}
               topIssues={displayResult.topIssues}
               scanId={displayResult.scanId}
               apiBaseUrl={API_BASE_URL}

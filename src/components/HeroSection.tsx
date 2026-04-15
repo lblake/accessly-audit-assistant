@@ -5,7 +5,6 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 interface HeroSectionProps {
   onSubmit: (url: string, specificUrl?: string) => void;
   apiError?: string | null;
-  apiBaseUrl?: string;
 }
 
 const ERROR_MESSAGES: Record<string, React.ReactNode> = {
@@ -29,16 +28,11 @@ const ERROR_MESSAGES: Record<string, React.ReactNode> = {
   ),
 };
 
-const HeroSection = ({ onSubmit, apiError, apiBaseUrl = "" }: HeroSectionProps) => {
+const HeroSection = ({ onSubmit, apiError }: HeroSectionProps) => {
   const [url, setUrl] = useState("");
   const [specificUrl, setSpecificUrl] = useState("");
   const [showSpecific, setShowSpecific] = useState(false);
   const [error, setError] = useState("");
-
-  // Rate-limit email flow
-  const [rateLimitEmail, setRateLimitEmail] = useState("");
-  const [rateLimitSubmitted, setRateLimitSubmitted] = useState(false);
-  const [rateLimitError, setRateLimitError] = useState("");
 
   const validateUrl = (value: string) => {
     if (!value.trim()) return "Please enter a URL";
@@ -71,24 +65,6 @@ const HeroSection = ({ onSubmit, apiError, apiBaseUrl = "" }: HeroSectionProps) 
     onSubmit(normalizedUrl, normalizedSpecific);
   };
 
-  const handleNotify = async () => {
-    if (!rateLimitEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rateLimitEmail)) {
-      setRateLimitError("Please enter a valid email");
-      return;
-    }
-    try {
-      await fetch(`${apiBaseUrl}/api/notify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: rateLimitEmail }),
-      });
-      setRateLimitSubmitted(true);
-      setRateLimitError("");
-    } catch {
-      setRateLimitError("Something went wrong. Please try again.");
-    }
-  };
-
   const isRateLimited = apiError === "RATE_LIMITED";
   const apiErrorMessage = apiError
     ? ERROR_MESSAGES[apiError] || ERROR_MESSAGES.GENERIC
@@ -119,25 +95,10 @@ const HeroSection = ({ onSubmit, apiError, apiBaseUrl = "" }: HeroSectionProps) 
               <p className="mt-1.5 text-left text-sm text-destructive">{apiErrorMessage}</p>
             )}
             {isRateLimited && (
-              <div className="mt-2 space-y-2 text-left">
+              <div className="mt-2 text-left">
                 <p className="text-sm text-destructive">
-                  You've run 3 free scans today. Enter your email below and we'll notify you when you can scan again.
+                  You've used your 3 scans for this hour. Your access resets automatically in 60 minutes — no sign-up needed.
                 </p>
-                {rateLimitSubmitted ? (
-                  <p className="text-sm text-muted-foreground">We'll let you know when you can scan again. Check your inbox shortly.</p>
-                ) : (
-                  <div className="flex gap-2">
-                    <input
-                      type="email"
-                      value={rateLimitEmail}
-                      onChange={(e) => { setRateLimitEmail(e.target.value); setRateLimitError(""); }}
-                      placeholder="Email address"
-                      className="h-10 flex-1 rounded-lg border border-border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
-                    <Button variant="cta" size="sm" onClick={handleNotify}>Notify Me</Button>
-                  </div>
-                )}
-                {rateLimitError && <p className="text-sm text-destructive">{rateLimitError}</p>}
               </div>
             )}
           </div>
